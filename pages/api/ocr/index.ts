@@ -63,9 +63,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       res.status(200).json({ extractedText });
-    } catch (error: any) {
-      console.error("Textract Error:", error);
-      res.status(500).json({ error: "Failed to process document.", details: error.message });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Textract Error:", error.message);
+        res.status(500).json({ error: "Failed to process document.", details: error.message });
+      } else {
+        console.error("Textract Error: Unknown error occurred.");
+        res.status(500).json({ error: "Failed to process document.", details: "Unknown error occurred." });
+      }
     }
   } else {
     res.setHeader("Allow", ["POST"]);

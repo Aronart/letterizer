@@ -58,8 +58,13 @@ ${text}
     const result = response.choices[0]?.message?.content || "No response generated.";
 
     res.status(200).json({ result });
-  } catch (error: any) {
-    console.error("OpenAI API Error:", error.message);
-    res.status(500).json({ error: "Failed to process request.", details: error.message });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("OpenAI API Error:", error.message);
+      res.status(500).json({ error: "Failed to process request.", details: error.message });
+    } else {
+      console.error("OpenAI API Error: Unknown error occurred.");
+      res.status(500).json({ error: "Failed to process request.", details: "Unknown error occurred." });
+    }
   }
 }

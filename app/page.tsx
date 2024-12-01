@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, ChangeEvent, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
+import Image from "next/image";
 
 export default function Home() {
   const [files, setFiles] = useState<File[]>([]);
@@ -175,11 +176,12 @@ export default function Home() {
           </button>
         </div>
         <div className="w-1/2">
-          <img
-            src="/placeholder-image.png"
-            alt="Placeholder"
-            className="w-full h-auto"
-          />
+          <Image
+              src="/placeholder-image.png"
+              alt="Placeholder"
+              width={500}
+              height={300}
+              className="w-full h-auto"/>
         </div>
       </header>
 
