@@ -112,7 +112,7 @@ export default function Home() {
 
   const handleChatSubmit = async (message: string) => {
     setChatMessages((prev) => [...prev, { role: "user", content: message }]);
-  
+
     try {
       const response = await fetch("/api/openai", {
         method: "POST",
@@ -124,9 +124,9 @@ export default function Home() {
           language,
         }),
       });
-  
+
       const { result } = await response.json();
-  
+
       setChatMessages((prev) => [
         ...prev,
         { role: "assistant", content: result },
@@ -166,7 +166,8 @@ export default function Home() {
           </h1>
           <p className="text-lg text-gray-600">
             Temp is an online assistant to simplify and translate all your
-            forms, making filling out forms and acting on them easy.
+            forms, making filling out forms and acting on them easy
+            blbaaoidchaiocoubeceqwpicnwpvbwourbvwiprv.
           </p>
           <button
             onClick={scrollToForm}
@@ -177,11 +178,12 @@ export default function Home() {
         </div>
         <div className="w-1/2">
           <Image
-              src="/placeholder-image.png"
-              alt="Placeholder"
-              width={500}
-              height={300}
-              className="w-full h-auto"/>
+            src="/placeholder-image.png"
+            alt="Placeholder"
+            width={500}
+            height={300}
+            className="w-full h-auto"
+          />
         </div>
       </header>
 
@@ -247,7 +249,9 @@ export default function Home() {
             onSubmit={(e: FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               const message = (
-                e.currentTarget.elements.namedItem("message") as HTMLInputElement
+                e.currentTarget.elements.namedItem(
+                  "message",
+                ) as HTMLInputElement
               ).value;
               handleChatSubmit(message);
               e.currentTarget.reset();
