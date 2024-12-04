@@ -27,11 +27,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (action === "summarize") {
       // Build the prompt for summarizing the document
       prompt = `
-You are a helpful assistant fluent in ${language}. 
+You are a helpful assistant fluent in ${language}. Your job is to thoroughly analyze the following document and provide a complete response in ${language}. Strict Rules:
+1. chars inside == are fixed parts of the response: if =....= --> Response has .... in this section;
+2. Parts inside [] are for you to think and add your words.
+3. Parts inside <> translate to ${language};
+4. Be Presice and short.
 
-Here is a document. Your task is:
-1. Provide a clear and concise summary of the document in ${language}.
-2. If the document contains actionable items, create a To-Do list based on the content. If no actionable items exist, explicitly state: "No actionable items were found."
+Your task has the following steps:
+
+
+Output your response in the following structured format in ${language}:
+
+<1.  Detailed Summary:>
+==========================================================================================================================================
+   [Provide a detailed and comprehensive but short summary of the document's content in ${language}. The summary should include:  
+   - The purpose of the document.  
+   - Key points or details (e.g., dates, amounts, deadlines, and instructions).  
+   - Any contextual information necessary to fully understand the document.  ]
+==========================================================================================================================================
+<2. To-Do List:>
+==========================================================================================================================================
+[If the document contains specific tasks, responsibilities, or actions for the recipient, create a detailed and organized To-Do list. If the document contains no actionable items, explicitly state:  
+"No actionable items were found."]
+<1. [Actionable item 1, with details and deadline if applicable]>
+=_________________________________________________________________________________________________________________________________________=
+<2. [Actionable item 2, with details and deadline if applicable]>
+=_________________________________________________________________________________________________________________________________________=
+...
+[If the document contains specific tasks, responsibilities, or actions for the recipient, create a detailed and organized To-Do list. If the document contains no actionable items, explicitly state:  
+"No actionable items were found."]
+==========================================================================================================================================
+<3. Notes or Clarifications:>
+==========================================================================================================================================
+[Provide explanations for confusing sections, additional context, or optional information if needed.]
+
+
 
 Document Content:
 ${text}
