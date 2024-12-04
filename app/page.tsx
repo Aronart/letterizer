@@ -13,13 +13,8 @@ export default function Home() {
   const [sessionId] = useState(uuidv4());
   const [uploading, setUploading] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const formSectionRef = useRef<HTMLDivElement | null>(null);
-
-  const scrollToForm = () => {
-    if (formSectionRef.current) {
-      formSectionRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  const resultRef = useRef<HTMLDivElement>(null);
+  const pricingRef = useRef<HTMLDivElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -54,7 +49,8 @@ export default function Home() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     if (files.length === 0) {
       alert("Please upload at least one file.");
       return;
@@ -96,6 +92,11 @@ export default function Home() {
             { role: "assistant", content: result },
           ]);
           setShowChat(true);
+
+          // Scroll to result section on mobile
+          if (window.innerWidth < 768) {
+            resultRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }
         } else {
           alert("Failed to extract text from the document.");
         }
@@ -109,6 +110,10 @@ export default function Home() {
 
     setUploading(false);
   };
+
+
+
+
 
   const handleChatSubmit = async (message: string) => {
     setChatMessages((prev) => [...prev, { role: "user", content: message }]);
@@ -137,142 +142,234 @@ export default function Home() {
     }
   };
 
+  const scrollToPricing = () => {
+    pricingRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
-    <div className="font-sans">
-      {/* Navigation */}
-      <nav className="flex justify-between items-center p-6 bg-white shadow">
-        <div className="text-xl font-bold">Temp</div>
-        <div className="flex items-center space-x-6">
-          <a href="#benefits" className="text-gray-600 hover:text-gray-800">
-            Benefits
-          </a>
-          <a href="#features" className="text-gray-600 hover:text-gray-800">
-            Features
-          </a>
-          <a href="#about-us" className="text-gray-600 hover:text-gray-800">
-            About Us
-          </a>
-          <button className="px-4 py-2 bg-black text-white rounded">
-            Sign In
-          </button>
-        </div>
-      </nav>
-
-      {/* Above-the-Fold Section */}
-      <header className="flex items-center justify-between p-12 bg-gray-50 min-h-[80vh]">
-        <div className="max-w-lg space-y-6">
-          <h1 className="text-4xl font-extrabold text-gray-900">
-            Simplify your government forms.
-          </h1>
-          <p className="text-lg text-gray-600">
-            Temp is an online assistant to simplify and translate all your
-            forms, making filling out forms and acting on them easy
-            blbaaoidchaiocoubeceqwpicnwpvbwourbvwiprv.
-          </p>
-          <button
-            onClick={scrollToForm}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg text-lg shadow hover:bg-blue-700"
-          >
-            Get Started
-          </button>
-        </div>
-        <div className="w-1/2">
-          <Image
-            src="/placeholder-image.png"
-            alt="Placeholder"
-            width={500}
-            height={300}
-            className="w-full h-auto"
-          />
-        </div>
-      </header>
-
-      {/* File Upload Section */}
-      <section
-        ref={formSectionRef}
-        className="max-w-4xl mx-auto bg-white p-6 rounded shadow mt-8"
-      >
-        <form
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault();
-            handleSubmit();
-          }}
-          className="flex flex-col space-y-4"
-        >
-          <input
-            type="file"
-            accept="application/pdf,image/*"
-            onChange={handleFileChange}
-            className="border border-gray-300 rounded p-2 w-full"
-          />
-          <select
-            value={language}
-            onChange={handleLanguageChange}
-            className="border border-gray-300 rounded p-2 w-full"
-          >
-            <option value="en">English</option>
-            <option value="es">Spanish</option>
-            <option value="fr">French</option>
-            <option value="de">German</option>
-            <option value="it">Italian</option>
-            <option value="nl">Dutch</option>
-            <option value="ru">Russian</option>
-            <option value="zh">Chinese</option>
-          </select>
-          <button
-            type="submit"
-            disabled={uploading}
-            className={`bg-blue-500 text-white py-2 px-4 rounded ${
-              uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
-            }`}
-          >
-            {uploading ? "Processing..." : "Submit"}
-          </button>
-        </form>
-      </section>
-
-      {/* Chat Section (Only visible after processing) */}
-      {showChat && (
-        <section className="max-w-4xl mx-auto bg-white p-6 rounded shadow mt-8">
-          <h2 className="text-2xl font-bold mb-4">Chat</h2>
-          <div className="border border-gray-300 p-4 rounded h-64 overflow-y-auto bg-gray-50">
-            {chatMessages.map((message, index) => (
-              <div key={index} className="mb-4">
-                <strong className="block text-gray-700">
-                  {message.role === "user" ? "You" : "Assistant"}:
-                </strong>
-                <p className="text-gray-900">{message.content}</p>
-              </div>
-            ))}
-          </div>
-          <form
-            onSubmit={(e: FormEvent<HTMLFormElement>) => {
-              e.preventDefault();
-              const message = (
-                e.currentTarget.elements.namedItem(
-                  "message",
-                ) as HTMLInputElement
-              ).value;
-              handleChatSubmit(message);
-              e.currentTarget.reset();
-            }}
-            className="mt-4 flex space-x-4"
-          >
-            <input
-              type="text"
-              name="message"
-              placeholder="Ask a question..."
-              className="flex-1 border border-gray-300 rounded p-2"
-            />
-            <button
-              type="submit"
-              className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+    <div className="font-sans bg-[#f5f5dc] text-gray-800 min-h-screen">
+      <div className="bg-[#f5f5dc] text-gray-800">
+        {/* Navigation */}
+        <nav className="flex justify-between items-center p-6 border-b border-gray-300 sticky top-0 bg-[#f5f5dc] z-10">
+          <div className="text-xl font-bold">Doculizer</div>
+          <div className="flex gap-4 items-center">
+            <button 
+              onClick={scrollToPricing}
+              className="px-4 py-2 bg-transparent text-gray-800 hover:bg-[#e6e6c7] rounded-lg transition-colors border border-gray-400"
             >
-              Send
+              See Plans
             </button>
-          </form>
-        </section>
-      )}
+            <button className="px-4 py-2 bg-gray-800 text-[#f5f5dc] rounded-lg hover:bg-gray-700 transition-colors">
+              Sign Up
+            </button>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main className="container mx-auto px-4 py-8">
+          {/* Hero and Upload Section */}
+          <div className="flex flex-col md:flex-row mb-24">
+            {/* Left side: Hero content and Upload form */}
+            <div className="w-full md:w-1/2 space-y-8">
+              <div className="space-y-6">
+                <h1 className="text-4xl font-extrabold">
+                  Government Forms Annoy.
+                  We Help.
+                </h1>
+                <p className="text-lg text-gray-700">
+                Outdated mailing communication wastes your time. Doculizer simplifies, 
+                translates, and digitizes forms so you can move forward.
+                </p>
+              </div>
+
+              {/* File Upload Section */}
+              <section className="bg-[#e6e6c7] p-6 rounded-lg shadow-lg border border-gray-300">
+                <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
+                  <div className="flex flex-col space-y-2">
+                    <label htmlFor="file-upload" className="text-sm font-medium">
+                      Upload File
+                    </label>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept="application/pdf,image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="file-upload"
+                      className="cursor-pointer bg-[#f5f5dc] text-gray-800 py-3 px-4 rounded-lg hover:bg-[#e6e6c7] transition-colors inline-block text-center font-medium text-lg border border-gray-400"
+                    >
+                      {files.length > 0 ? files[0].name : "Choose File"}
+                    </label>
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <label htmlFor="language-select" className="text-sm font-medium">
+                      Select your favourite Language
+                    </label>
+                    <select
+                      id="language-select"
+                      value={language}
+                      onChange={handleLanguageChange}
+                      className="border border-gray-400 rounded-lg p-2 w-full bg-[#f5f5dc] text-gray-800"
+                    >
+                      <option value="en">English</option>
+                      <option value="es">Spanish</option>
+                      <option value="fr">French</option>
+                      <option value="de">German</option>
+                      <option value="ar">Arabic</option>
+                      <option value="uk">Ukrainian</option>
+                      <option value="ru">Russian</option>
+                      <option value="zh">Chinese</option>
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={uploading}
+                    className={`bg-gray-800 text-[#f5f5dc] py-2 px-4 rounded-lg ${
+                      uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-700"
+                    } transition-colors`}
+                  >
+                    {uploading ? "Processing..." : "Submit"}
+                  </button>
+                </form>
+              </section>
+            </div>
+
+            {/* Right side: Placeholder Image / Result and Chat */}
+            <div className="w-full md:w-1/2 md:pl-8 mt-8 md:mt-0" ref={resultRef}>
+              <div className="relative">
+                {/* Placeholder Image */}
+                <div className={`transition-all duration-500 ease-in-out ${showChat ? 'opacity-0 h-0' : 'opacity-100 h-auto'}`}>
+                  <Image
+                    src="/placeholder-image.png"
+                    alt="Placeholder"
+                    width={800}
+                    height={600}
+                    className="w-full h-auto object-cover rounded-lg shadow-lg"
+                  />
+                </div>
+
+                {/* Result and Chat Section */}
+                <div 
+                  className={`transition-all duration-500 ease-in-out relative z-10 ${
+                    showChat ? 'opacity-100 max-h-[1000px]' : 'opacity-0 max-h-0'
+                  } overflow-hidden`}
+                >
+                  <div className="bg-[#e6e6c7] p-6 rounded-lg shadow-lg border border-gray-300 space-y-4">
+                    <h2 className="text-2xl font-bold mb-4">Chat</h2>
+                    <div className="border border-gray-400 p-4 rounded-lg h-64 overflow-y-auto bg-[#f5f5dc]">
+                      {chatMessages.map((message, index) => (
+                        <div key={index} className="mb-4">
+                          <strong className="block text-gray-700">
+                            {message.role === "user" ? "You" : "Assistant"}:
+                          </strong>
+                          <p className="text-gray-800">{message.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <form
+                      onSubmit={(e: FormEvent<HTMLFormElement>) => {
+                        e.preventDefault();
+                        const message = (
+                          e.currentTarget.elements.namedItem(
+                            "message"
+                          ) as HTMLInputElement
+                        ).value;
+                        handleChatSubmit(message);
+                        e.currentTarget.reset();
+                      }}
+                      className="flex space-x-4"
+                    >
+                      <input
+                        type="text"
+                        name="message"
+                        placeholder="Ask a question..."
+                        className="flex-1 border border-gray-400 rounded-lg p-2 bg-[#f5f5dc] text-gray-800"
+                      />
+                      <button
+                        type="submit"
+                        className="bg-gray-800 text-[#f5f5dc] py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+                      >
+                        Send
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pricing Section */}
+          <div ref={pricingRef} className="py-16 scroll-mt-20">
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {/* Free Plan */}
+              <div className="w-full bg-[#e6e6c7] p-8 rounded-lg shadow-lg border border-gray-300">
+                <div className="mb-8">
+                  <h3 className="text-2xl font-bold mb-2">Free</h3>
+                  <p className="text-gray-700 mb-4">
+                    Upload a Picture of your Document and get valuable Insights in the Language of your choice.
+                  </p>
+                  <div className="text-3xl font-bold">$0</div>
+                </div>
+                
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-center">
+                    <span className="mr-2 text-green-600">✓</span>
+                    Single document processing
+                  </li>
+                  <li className="flex items-center">
+                    <span className="mr-2 text-green-600">✓</span>
+                    Basic language translation
+                  </li>
+                  <li className="flex items-center">
+                    <span className="mr-2 text-green-600">✓</span>
+                    Simple document insights
+                  </li>
+                </ul>
+
+                <button 
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  className="w-full px-6 py-3 bg-gray-800 text-[#f5f5dc] rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Try It
+                </button>
+              </div>
+
+              {/* Pro Plan */}
+              <div className="w-full bg-gray-800 text-[#f5f5dc] p-8 rounded-lg shadow-lg relative overflow-hidden">
+                <div className="mb-8">
+                  <h3 className="text-2xl font-bold mb-2">Pro</h3>
+                  <p className="text-gray-300 mb-4">
+                    Upload, Store & Chat with your Documents in any Language. Digitalization is here.
+                  </p>
+                  <div className="text-3xl font-bold">Contact Us</div>
+                </div>
+                
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-center">
+                    <span className="mr-2 text-green-400">✓</span>
+                    Unlimited document processing
+                  </li>
+                  <li className="flex items-center">
+                    <span className="mr-2 text-green-400">✓</span>
+                    Advanced language translation
+                  </li>
+                  <li className="flex items-center">
+                    <span className="mr-2 text-green-400">✓</span>
+                    Document storage & management
+                  </li>
+                </ul>
+
+                <button className="w-full px-6 py-3 bg-[#f5f5dc] text-gray-800 rounded-lg hover:bg-[#e6e6c7] transition-colors">
+                  Sign Up
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
+
