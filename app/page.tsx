@@ -357,7 +357,9 @@ export default function Home() {
                   </li>
                 </ul>
 
-                <button className="w-full px-6 py-3 bg-[#f5f5dc] text-gray-800 rounded-lg hover:bg-[#e6e6c7] transition-colors">
+                <button 
+                onClick={() => window.open("https://airtable.com/app6lF04LIuLbm3Z8/pagg0r3rqobQKG2t6/form", "_blank")}
+                className="w-full px-6 py-3 bg-[#f5f5dc] text-gray-800 rounded-lg hover:bg-[#e6e6c7] transition-colors">
                   Sign Up
                 </button>
               </div>
