@@ -5,17 +5,26 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { text, sessionId, language, action } = req.body;
 
-  // Validate required fields
+  console.log("Incoming Parameters:", { text, sessionId, language, action });
+
   if (!text || !sessionId || !language || !action) {
     const missingFields = [];
     if (!text) missingFields.push("text");
     if (!sessionId) missingFields.push("sessionId");
     if (!language) missingFields.push("language");
     if (!action) missingFields.push("action");
-  
+
+    console.error("Missing fields:", missingFields);
+
     return res.status(400).json({
       error: `Missing required fields: ${missingFields.join(", ")}`,
     });
@@ -25,76 +34,83 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let prompt = "";
 
     if (action === "summarize") {
-      // Build the prompt for summarizing the document
-      prompt = `
-You are a helpful assistant fluent in ${language}. Your job is to thoroughly analyze the following document and provide a complete response in ${language}. Strict Rules:
-1. chars inside == are fixed parts of the response: if =....= --> Response has .... in this section;
-2. Parts inside [] are for you to think and add your words.
-3. Parts inside <> translate to ${language};
-4. Be Presice and short.
+      prompt = `You are a helpful assistant fluent in ${language}. Your job is to analyze the following document and provide an **easy-to-understand** response for someone unfamiliar with complex language or bureaucratic terms. Imagine the person is an expat trying to quickly figure out what they need to do.
 
-Your task has the following steps:
+Follow these strict rules:
 
+1. **Fixed Responses**: Text inside == is fixed and must be included exactly as written (e.g., =...= means the response must contain "...").
+2. **Simple Words**: Avoid long or complex sentences. Use short, clear sentences that are easy to read. No technical jargon or unnecessary details.
+3. **Direct and Actionable**: Focus on what the person needs to know and what actions they need to take.
+4. **Translations**: Text inside <> must be translated into ${language}.
 
-Output your response in the following structured format in ${language}:
+Your response must follow this format in ${language}:
 
-<1.  Detailed Summary:>
+---
+
+1. What is this document about?
 ==========================================================================================================================================
-   [Provide a detailed and comprehensive but short summary of the document's content in ${language}. The summary should include:  
-   - The purpose of the document.  
-   - Key points or details (e.g., dates, amounts, deadlines, and instructions).  
-   - Any contextual information necessary to fully understand the document.  ]
+[Write a simple explanation of the document’s purpose in ${language}. Focus on the "big picture" in 2–3 short sentences.]
 ==========================================================================================================================================
-<2. To-Do List:>
-==========================================================================================================================================
-[If the document contains specific tasks, responsibilities, or actions for the recipient, create a detailed and organized To-Do list. If the document contains no actionable items, explicitly state:  
-"No actionable items were found."]
-<1. [Actionable item 1, with details and deadline if applicable]>
-=_________________________________________________________________________________________________________________________________________=
-<2. [Actionable item 2, with details and deadline if applicable]>
-=_________________________________________________________________________________________________________________________________________=
-...
-[If the document contains specific tasks, responsibilities, or actions for the recipient, create a detailed and organized To-Do list. If the document contains no actionable items, explicitly state:  
-"No actionable items were found."]
-==========================================================================================================================================
-<3. Notes or Clarifications:>
-==========================================================================================================================================
-[Provide explanations for confusing sections, additional context, or optional information if needed.]
 
+2. What do I need to do?
+==========================================================================================================================================
+[Create a clear and simple To-Do List in ${language}. Focus on actions the person needs to take, written as clear steps.  
+If there is nothing to do, state: =There is nothing you need to do.=]
+1. [Actionable step 1 with details (e.g., deadlines, amounts, or where to send something).]  
+2. [Actionable step 2, if applicable.]  
+3. [Actionable step 3, if applicable.]  
+==========================================================================================================================================
 
+3. Important Notes or Warnings
+==========================================================================================================================================
+[Add any important information the person should know, such as deadlines, legal warnings, or helpful tips.  
+If there is nothing important, state: =There is nothing extra you need to know.=]
+==========================================================================================================================================
 
-Document Content:
-${text}
-      `;
+---
+
+**Tone Guidelines**:
+- **Friendly**: Write as if you are calmly explaining something to a friend.
+- **Encouraging**: If the document sounds overwhelming, reassure them it is manageable and provide guidance.
+- **Focused**: Highlight only the key points; ignore unnecessary details.
+Document Text:\n\n
+${text}`;
     } else if (action === "chat") {
-      // Build the prompt for follow-up chat messages
-      prompt = `
-    You are a helpful assistant fluent in ${language}. Answer the following question clearly and concisely in ${language}:
-    
-    User Question:
-    ${text}
-      `;
-    }
-    else {
+      prompt = `You are a helpful assistant fluent in ${language}. Respond to the user's query:\n\n${text}`;
+    } else {
       return res.status(400).json({ error: "Invalid action specified." });
     }
 
-    // Send the prompt to ChatGPT
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "system", content: prompt }],
+      stream: true,
     });
 
-    const result = response.choices[0]?.message?.content || "No response generated.";
+    let fullResponse = "";
 
-    res.status(200).json({ result });
+    for await (const chunk of response) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        fullResponse += content;
+        res.write(`${content}`); // Send raw content without "data:" prefix
+      }
+    }
+
+    console.log("Final Response:", fullResponse);
+
+    res.end();
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error("OpenAI API Error:", error.message);
       res.status(500).json({ error: "Failed to process request.", details: error.message });
     } else {
-      console.error("OpenAI API Error: Unknown error occurred.");
-      res.status(500).json({ error: "Failed to process request.", details: "Unknown error occurred." });
+      console.error("Unknown OpenAI API Error.");
+      res.status(500).json({ error: "Unknown error occurred." });
     }
   }
 }

@@ -55,51 +55,63 @@ export default function Home() {
       alert("Please upload at least one file.");
       return;
     }
-
+  
     setUploading(true);
-
+  
     try {
       const s3Key = await uploadFileToS3(files[0]);
-
+  
       if (s3Key) {
         const ocrResponse = await fetch("/api/ocr", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ s3Key, sessionId }),
+        });
+  
+        const { extractedText } = await ocrResponse.json();
+  
+        if (!extractedText) {
+          alert("Failed to extract text from the document.");
+          return;
+        }
+  
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "" },
+        ]);
+  
+        const openaiResponse = await fetch("/api/openai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            s3Key,
+            text: extractedText,
             sessionId,
+            language,
+            action: "summarize",
           }),
         });
-
-        const { extractedText } = await ocrResponse.json();
-
-        if (extractedText) {
-          const openaiResponse = await fetch("/api/openai", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              text: extractedText,
-              sessionId,
-              language,
-              action: "summarize",
-            }),
-          });
-
-          const { result } = await openaiResponse.json();
-
-          setChatMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: result },
-          ]);
-          setShowChat(true);
-
-          // Scroll to result section on mobile
-          if (window.innerWidth < 768) {
-            resultRef.current?.scrollIntoView({ behavior: 'smooth' });
+  
+        const reader = openaiResponse.body?.getReader();
+        if (reader) {
+          const decoder = new TextDecoder("utf-8");
+          let content = "";
+  
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+  
+            const chunk = decoder.decode(value, { stream: true });
+            content += chunk;
+  
+            // Update the UI progressively
+            setChatMessages((prev) => [
+              ...prev.slice(0, -1),
+              { role: "assistant", content },
+            ]);
           }
-        } else {
-          alert("Failed to extract text from the document.");
         }
+  
+        setShowChat(true);
       } else {
         alert("Failed to upload the file.");
       }
@@ -107,18 +119,23 @@ export default function Home() {
       console.error("Error during processing:", error);
       alert("An error occurred during processing.");
     }
-
+  
     setUploading(false);
   };
-
-
-
-
-
+  
   const handleChatSubmit = async (message: string) => {
+    // Add user's message to the chat
     setChatMessages((prev) => [...prev, { role: "user", content: message }]);
-
+  
     try {
+      // Log the payload for debugging
+      console.log("Sending chat request:", {
+        text: message,
+        sessionId,
+        language,
+        action: "chat",
+      });
+  
       const response = await fetch("/api/openai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -129,13 +146,41 @@ export default function Home() {
           language,
         }),
       });
-
-      const { result } = await response.json();
-
-      setChatMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: result },
-      ]);
+  
+      const reader = response.body?.getReader();
+      if (reader) {
+        const decoder = new TextDecoder("utf-8");
+        let content = "";
+  
+        // Add an empty placeholder for the assistant's response
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "" },
+        ]);
+  
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+  
+          // Decode and process the chunk
+          const chunk = decoder.decode(value, { stream: true });
+          content += chunk;
+  
+          // Update the assistant's message progressively
+          setChatMessages((prev) => {
+            const updatedMessages = [...prev];
+            const lastMessageIndex = updatedMessages.findIndex(
+              (msg) => msg.role === "assistant" && msg.content === ""
+            );
+            if (lastMessageIndex !== -1) {
+              updatedMessages[lastMessageIndex].content = content;
+            }
+            return updatedMessages;
+          });
+        }
+  
+        console.log("Final Assistant Response:", content);
+      }
     } catch (error) {
       console.error("Error during chat processing:", error);
       alert("An error occurred during chat processing.");
@@ -143,7 +188,7 @@ export default function Home() {
   };
 
   const scrollToPricing = () => {
-    pricingRef.current?.scrollIntoView({ behavior: 'smooth' });
+    pricingRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -153,7 +198,7 @@ export default function Home() {
         <nav className="flex justify-between items-center p-6 border-b border-gray-300 sticky top-0 bg-[#f5f5dc] z-10">
           <div className="text-xl font-bold">Doculizer</div>
           <div className="flex gap-4 items-center">
-            <button 
+            <button
               onClick={scrollToPricing}
               className="px-4 py-2 bg-transparent text-gray-800 hover:bg-[#e6e6c7] rounded-lg transition-colors border border-gray-400"
             >
@@ -173,12 +218,10 @@ export default function Home() {
             <div className="w-full md:w-1/2 space-y-8">
               <div className="space-y-6">
                 <h1 className="text-4xl font-extrabold">
-                  Government Forms Annoy.
-                  We Help.
+                  Government Letters Are Complicated. We Help.
                 </h1>
                 <p className="text-lg text-gray-700">
-                Outdated mailing communication wastes your time. Doculizer simplifies, 
-                translates, and digitizes forms so you can move forward.
+                  Outdated mailing communication wastes your time. Doculizer translates, simplifies, and digitizes letters and forms so you can move forward.
                 </p>
               </div>
 
@@ -186,7 +229,10 @@ export default function Home() {
               <section className="bg-[#e6e6c7] p-6 rounded-lg shadow-lg border border-gray-300">
                 <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
                   <div className="flex flex-col space-y-2">
-                    <label htmlFor="file-upload" className="text-sm font-medium">
+                    <label
+                      htmlFor="file-upload"
+                      className="text-sm font-medium"
+                    >
                       Upload File
                     </label>
                     <input
@@ -204,8 +250,11 @@ export default function Home() {
                     </label>
                   </div>
                   <div className="flex flex-col space-y-2">
-                    <label htmlFor="language-select" className="text-sm font-medium">
-                      Select your favourite Language
+                    <label
+                      htmlFor="language-select"
+                      className="text-sm font-medium"
+                    >
+                      Select Language
                     </label>
                     <select
                       id="language-select"
@@ -227,7 +276,9 @@ export default function Home() {
                     type="submit"
                     disabled={uploading}
                     className={`bg-gray-800 text-[#f5f5dc] py-2 px-4 rounded-lg ${
-                      uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-700"
+                      uploading
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-gray-700"
                     } transition-colors`}
                   >
                     {uploading ? "Processing..." : "Submit"}
@@ -251,7 +302,7 @@ export default function Home() {
                 </div>
 
                 {/* Result and Chat Section */}
-                <div 
+                <div
                   className={`transition-all duration-500 ease-in-out relative z-10 ${
                     showChat ? 'opacity-100 max-h-[1000px]' : 'opacity-0 max-h-0'
                   } overflow-hidden`}
@@ -264,7 +315,9 @@ export default function Home() {
                           <strong className="block text-gray-700">
                             {message.role === "user" ? "You" : "Assistant"}:
                           </strong>
-                          <p className="text-gray-800">{message.content}</p>
+                          <pre className="whitespace-pre-wrap text-gray-800">
+                            {message.content}
+                          </pre>
                         </div>
                       ))}
                     </div>
@@ -299,77 +352,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-
-          {/* Pricing Section */}
-          <div ref={pricingRef} className="py-16 scroll-mt-20">
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {/* Free Plan */}
-              <div className="w-full bg-[#e6e6c7] p-8 rounded-lg shadow-lg border border-gray-300">
-                <div className="mb-8">
-                  <h3 className="text-2xl font-bold mb-2">Free</h3>
-                  <p className="text-gray-700 mb-4">
-                    Upload a Picture of your Document and get valuable Insights in the Language of your choice.
-                  </p>
-                  <div className="text-3xl font-bold">$0</div>
-                </div>
-                
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-center">
-                    <span className="mr-2 text-green-600">✓</span>
-                    Single document processing
-                  </li>
-                  <li className="flex items-center">
-                    <span className="mr-2 text-green-600">✓</span>
-                    Basic language translation
-                  </li>
-                  <li className="flex items-center">
-                    <span className="mr-2 text-green-600">✓</span>
-                    Simple document insights
-                  </li>
-                </ul>
-
-                <button 
-                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                  className="w-full px-6 py-3 bg-gray-800 text-[#f5f5dc] rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  Try It
-                </button>
-              </div>
-
-              {/* Pro Plan */}
-              <div className="w-full bg-gray-800 text-[#f5f5dc] p-8 rounded-lg shadow-lg relative overflow-hidden">
-                <div className="mb-8">
-                  <h3 className="text-2xl font-bold mb-2">Pro</h3>
-                  <p className="text-gray-300 mb-4">
-                    Upload, Store & Chat with your Documents in any Language. Digitalization is here.
-                  </p>
-                  <div className="text-3xl font-bold">Contact Us</div>
-                </div>
-                
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-center">
-                    <span className="mr-2 text-green-400">✓</span>
-                    Unlimited document processing
-                  </li>
-                  <li className="flex items-center">
-                    <span className="mr-2 text-green-400">✓</span>
-                    Advanced language translation
-                  </li>
-                  <li className="flex items-center">
-                    <span className="mr-2 text-green-400">✓</span>
-                    Document storage & management
-                  </li>
-                </ul>
-
-                <button className="w-full px-6 py-3 bg-[#f5f5dc] text-gray-800 rounded-lg hover:bg-[#e6e6c7] transition-colors">
-                  Sign Up
-                </button>
-              </div>
-            </div>
-          </div>
         </main>
       </div>
     </div>
   );
 }
-
