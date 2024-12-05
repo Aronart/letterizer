@@ -159,7 +159,9 @@ export default function Home() {
             >
               See Plans
             </button>
-            <button className="px-4 py-2 bg-gray-800 text-[#f5f5dc] rounded-lg hover:bg-gray-700 transition-colors">
+            <button
+            onClick={() => window.open("https://airtable.com/app6lF04LIuLbm3Z8/pagg0r3rqobQKG2t6/form", "_blank")}
+            className="px-4 py-2 bg-gray-800 text-[#f5f5dc] rounded-lg hover:bg-gray-700 transition-colors">
               Sign Up
             </button>
           </div>
@@ -270,14 +272,8 @@ export default function Home() {
                     </div>
                     <form
                       onSubmit={(e: FormEvent<HTMLFormElement>) => {
-                        e.preventDefault();
-                        const message = (
-                          e.currentTarget.elements.namedItem(
-                            "message"
-                          ) as HTMLInputElement
-                        ).value;
-                        handleChatSubmit(message);
-                        e.currentTarget.reset();
+                        e.preventDefault(); // Prevent the chat form submission
+                        window.open("https://airtable.com/app6lF04LIuLbm3Z8/pagyka1WMIl8kC0bh/form", "_blank"); // Open Airtable in a new tab
                       }}
                       className="flex space-x-4"
                     >
