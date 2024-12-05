@@ -1,7 +1,7 @@
 {
     "functions": {
         "api/*": {
-        "runtime": "nodejs18.x" // Use Node.js runtime for better compatibility
+        "runtime": "nodejs18.x"
         }
     }
 }
