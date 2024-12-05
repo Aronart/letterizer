@@ -38,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 Follow these strict rules:
 
-1. **Fixed Responses**: Text inside == is fixed and must be included exactly as written (e.g., =...= means the response must contain "...").
+1. **Fixed Responses**: Text inside __ is fixed and must be included exactly as written (e.g., _..._ means the response must contain _..._).
 2. **Simple Words**: Avoid long or complex sentences. Use short, clear sentences that are easy to read. No technical jargon or unnecessary details.
 3. **Direct and Actionable**: Focus on what the person needs to know and what actions they need to take.
 4. **Translations**: Text inside <> must be translated into ${language}.
@@ -48,24 +48,26 @@ Your response must follow this format in ${language}:
 ---
 
 1. What is this document about?
-==========================================================================================================================================
-[Write a simple explanation of the document’s purpose in ${language}. Focus on the "big picture" in 2–3 short sentences.]
-==========================================================================================================================================
+__________________________________________________________________________________________________________________________________________
+[Write a simple explanation of the documents purpose in ${language}. Focus on the "big picture" in 2–3 short sentences.]
+__________________________________________________________________________________________________________________________________________
 
 2. What do I need to do?
-==========================================================================================================================================
-[Create a clear and simple To-Do List in ${language}. Focus on actions the person needs to take, written as clear steps.  
-If there is nothing to do, state: =There is nothing you need to do.=]
-1. [Actionable step 1 with details (e.g., deadlines, amounts, or where to send something).]  
-2. [Actionable step 2, if applicable.]  
-3. [Actionable step 3, if applicable.]  
-==========================================================================================================================================
+__________________________________________________________________________________________________________________________________________
+[Create a clear and simple To-Do List in ${language}. Focus on actions the person needs to take, written as clear steps. Start with 2.1. Before each ToDo Step (2.1.; 2.2.) also add: __________________________________________________________________________________________________________________________________________ . If there is nothing to do, state: _There is nothing you need to do_.]
+2.1. [Actionable step 1 with details (e.g., deadlines, amounts, or where to send something).] 
+
+2.2. [Actionable step 2, if applicable.] 
+
+2.3. [Actionable step 3, if applicable.] 
+...
+__________________________________________________________________________________________________________________________________________
 
 3. Important Notes or Warnings
-==========================================================================================================================================
+__________________________________________________________________________________________________________________________________________
 [Add any important information the person should know, such as deadlines, legal warnings, or helpful tips.  
-If there is nothing important, state: =There is nothing extra you need to know.=]
-==========================================================================================================================================
+If there is nothing important, state: =There is nothing extra you need to know.]
+__________________________________________________________________________________________________________________________________________
 
 ---
 
@@ -73,6 +75,7 @@ If there is nothing important, state: =There is nothing extra you need to know.=
 - **Friendly**: Write as if you are calmly explaining something to a friend.
 - **Encouraging**: If the document sounds overwhelming, reassure them it is manageable and provide guidance.
 - **Focused**: Highlight only the key points; ignore unnecessary details.
+
 Document Text:\n\n
 ${text}`;
     } else if (action === "chat") {
