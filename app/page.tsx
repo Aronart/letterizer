@@ -122,7 +122,7 @@ export default function Home() {
     setUploading(false);
   };
 
-  const handleChatSubmit = async (message: string) => {
+  /* const handleChatSubmit = async (message: string) => {
     setChatMessages((prev) => [...prev, { role: "user", content: message }]);
 
     try {
@@ -170,7 +170,7 @@ export default function Home() {
       console.error("Error during chat processing:", error);
       alert("An error occurred during chat processing.");
     }
-  };
+  }; */
 
   const scrollToPricing = () => {
     pricingRef.current?.scrollIntoView({ behavior: "smooth" });
