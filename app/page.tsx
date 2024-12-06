@@ -224,7 +224,7 @@ export default function Home() {
                     <input
                       id="file-upload"
                       type="file"
-                      accept="application/pdf,image/*"
+                      accept="application/image/*"
                       onChange={handleFileChange}
                       className="hidden"
                     />
