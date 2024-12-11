@@ -122,7 +122,7 @@ export default function Home() {
     setUploading(false);
   };
 
-  /* const handleChatSubmit = async (message: string) => {
+  const handleChatSubmit = async (message: string) => {
     setChatMessages((prev) => [...prev, { role: "user", content: message }]);
 
     try {
@@ -170,7 +170,7 @@ export default function Home() {
       console.error("Error during chat processing:", error);
       alert("An error occurred during chat processing.");
     }
-  }; */
+  };
 
   const scrollToPricing = () => {
     pricingRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -308,18 +308,17 @@ export default function Home() {
                       onSubmit={(e: FormEvent<HTMLFormElement>) => {
                         e.preventDefault();
 
-                        // Comment out this block when re-enabling dynamic chat
+                        /* // Comment out this block when re-enabling dynamic chat
                         window.open(
                           "https://airtable.com/app6lF04LIuLbm3Z8/pagyka1WMIl8kC0bh/form",
                           "_blank"
-                        );
+                        ); */
 
-                        // Uncomment this block to restore dynamic chat behavior
-                        // const message = (
-                        //   e.currentTarget.elements.namedItem("message") as HTMLInputElement
-                        // ).value;
-                        // handleChatSubmit(message);
-                        // e.currentTarget.reset();
+                        const message = (
+                          e.currentTarget.elements.namedItem("message") as HTMLInputElement
+                        ).value;
+                        handleChatSubmit(message);
+                        e.currentTarget.reset();
                       }}
                       className="flex space-x-4"
                     >
