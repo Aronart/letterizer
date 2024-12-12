@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react'
 import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
+import { useRouter } from 'next/navigation'
 
 const languages = [
   { code: 'en', name: 'English', question: 'Which language would you like to work in?' },
@@ -18,13 +19,18 @@ const languages = [
 export default function Home() {
   const [files, setFiles] = useState<File[]>([])
   const [language, setLanguage] = useState<string>('')
-  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([])
+  const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([
+    { role: 'assistant', content: 'Hi, let me help you with your government form. Please upload a picture of the letter.' }
+  ])
   const [sessionId] = useState(uuidv4())
   const [uploading, setUploading] = useState(false)
-  const [showChat, setShowChat] = useState(false)
+  const [initialResponseReceived, setInitialResponseReceived] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
   const pricingRef = useRef<HTMLDivElement>(null)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [showSignUpPanel, setShowSignUpPanel] = useState(false)
+  const [showFloatingButton, setShowFloatingButton] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -95,7 +101,7 @@ export default function Home() {
 
         setChatMessages((prev) => [
           ...prev,
-          { role: "assistant", content: "" },
+          { role: "assistant", content: "Processing your document..." },
         ])
 
         const openaiResponse = await fetch("/api/openai", {
@@ -128,7 +134,14 @@ export default function Home() {
           }
         }
 
-        setShowChat(true)
+        setInitialResponseReceived(true)
+
+        // Add the sign-up message after the initial response
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "Sign up so I can continue helping you with your government form." },
+        ])
+        setShowSignUpPanel(true)
       } else {
         alert("Failed to upload the file.")
       }
@@ -194,6 +207,26 @@ export default function Home() {
     pricingRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
+  const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const fullName = formData.get('fullName') as string
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+
+    // Here you would typically send this data to your backend
+    // For now, we'll just simulate a successful sign-up
+    console.log("Sign-up submitted", { fullName, email, password })
+
+    // Redirect to the detailed information form
+    router.push('/signup/details')
+  }
+
+  const closeSignUpPanel = () => {
+    setShowSignUpPanel(false)
+    setShowFloatingButton(true)
+  }
+
   if (!language) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -218,13 +251,18 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen relative">
       <header className="bg-gray-800 text-white p-4">
         <nav className="container mx-auto flex justify-between items-center">
           <div className="text-2xl font-bold">Doculizer</div>
-          <button onClick={scrollToPricing} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
-            Pricing
-          </button>
+          <div>
+            <button onClick={() => setShowSignUpPanel(true)} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors mr-4">
+              Sign Up
+            </button>
+            <button onClick={scrollToPricing} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+              Pricing
+            </button>
+          </div>
         </nav>
       </header>
 
@@ -237,7 +275,7 @@ export default function Home() {
         <div className="grid md:grid-cols-2 gap-8">
           <div>
             {/* File Upload Section */}
-            <section className="bg-gray-100 p-6 rounded-lg shadow-lg border border-gray-300">
+            <section className="bg-gray-100 p-6 rounded-lg shadow-lg border border-gray-300 mb-8">
               <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
                 <div className="flex flex-col space-y-2">
                   <label htmlFor="file-upload" className="text-sm font-medium">
@@ -269,42 +307,41 @@ export default function Home() {
               </form>
             </section>
 
-            {/* Results Section */}
-            {showChat && (
-              <div ref={resultRef} className="mt-8">
-                <h2 className="text-2xl font-bold mb-4">Results</h2>
-                <div className="bg-white p-4 rounded-lg shadow border border-gray-300">
-                  {chatMessages.map((message, index) => (
-                    <div key={index} className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
-                      <div className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                        {message.content}
-                      </div>
+            {/* Chat Section */}
+            <div className="bg-white p-4 rounded-lg shadow border border-gray-300">
+              <div className="h-64 overflow-y-auto mb-4">
+                {chatMessages.map((message, index) => (
+                  <div key={index} className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
+                    <div className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                      {message.content}
                     </div>
-                  ))}
-                </div>
-                <form onSubmit={(e) => {
-                  e.preventDefault()
-                  const input = e.currentTarget.elements.namedItem('chat-input') as HTMLInputElement
-                  if (input.value.trim()) {
-                    handleChatSubmit(input.value.trim())
-                    input.value = ''
-                  }
-                }} className="mt-4 flex">
-                  <input
-                    type="text"
-                    name="chat-input"
-                    placeholder="Ask a question..."
-                    className="flex-grow p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600 transition-colors"
-                  >
-                    Send
-                  </button>
-                </form>
+                  </div>
+                ))}
               </div>
-            )}
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                const input = e.currentTarget.elements.namedItem('chat-input') as HTMLInputElement
+                if (input.value.trim() && initialResponseReceived) {
+                  handleChatSubmit(input.value.trim())
+                  input.value = ''
+                }
+              }} className="mt-4 flex">
+                <input
+                  type="text"
+                  name="chat-input"
+                  placeholder="Ask a question..."
+                  className="flex-grow p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!initialResponseReceived}
+                />
+                <button
+                  type="submit"
+                  className={`bg-blue-500 text-white px-4 py-2 rounded-r-lg ${initialResponseReceived ? 'hover:bg-blue-600' : 'opacity-50 cursor-not-allowed'} transition-colors`}
+                  disabled={!initialResponseReceived}
+                >
+                  Send
+                </button>
+              </form>
+            </div>
           </div>
 
           <div>
@@ -366,11 +403,7 @@ export default function Home() {
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                  <span className="mr-2 text-green-400">✓</span>
-                  Unlimited document processing
-                </li>
-                <li className="flex items-center">
-                  <span className="mr-2 text-green-400">✓</span>
+                <span className="mr-2 text-green-400">✓</span>
                   Unlimited document processing
                 </li>
                 <li className="flex items-center">
@@ -398,6 +431,37 @@ export default function Home() {
           <p>&copy; 2023 Doculizer. All rights reserved.</p>
         </div>
       </footer>
+
+      {/* Sign-up Panel */}
+      <div className={`fixed inset-y-0 right-0 w-96 bg-white shadow-lg transform ${showSignUpPanel ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300 ease-in-out overflow-y-auto`}>
+        <div className="p-6">
+          <button onClick={closeSignUpPanel} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <h2 className="text-2xl font-bold mb-4">Sign Up for Pro Access</h2>
+          <p className="mb-4">Get unlimited document processing, advanced language translation, and document storage & management.</p>
+          <form onSubmit={handleSignUp} className="space-y-4">
+            <input type="text" placeholder="Full Name" name="fullName" className="w-full p-2 border rounded" required />
+            <input type="email" placeholder="Email" name="email" className="w-full p-2 border rounded" required />
+            <input type="password" placeholder="Password" name="password" className="w-full p-2 border rounded" required />
+            <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors">
+              Sign Up
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* Floating Sign-up Button */}
+      {showFloatingButton && (
+        <button
+          onClick={() => setShowSignUpPanel(true)}
+          className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+        >
+          Sign Up
+        </button>
+      )}
 
       {process.env.NEXT_PUBLIC_DEMO_MODE === 'true' && (
         <div className="bg-yellow-300 text-black p-2 text-center fixed bottom-0 left-0 right-0">
