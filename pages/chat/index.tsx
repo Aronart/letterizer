@@ -58,14 +58,6 @@ const INITIAL_MESSAGES: Message[] = [
   }
 ]
 
-const INITIAL_DOCUMENTS: Document[] = [
-  {
-    id: uuidv4(),
-    name: 'Residence Permit Request.pdf',
-    category: 'Residence Permit',
-    uploadDate: '2024-12-13'
-  }
-]
 
 const INITIAL_REMINDERS: Reminder[] = [
   {
@@ -75,17 +67,23 @@ const INITIAL_REMINDERS: Reminder[] = [
   }
 ]
 
+const INITIAL_DOCUMENTS: Document[] = [
+  {
+    id: uuidv4(),
+    name: 'Residence Permit Request.pdf',
+    category: 'Residence Permit',
+    uploadDate: '2024-12-13'
+  }
+]
+
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES)
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [documents, setDocuments] = useState<Document[]>(INITIAL_DOCUMENTS)
-  const [reminders, setReminders] = useState<Reminder[]>(INITIAL_REMINDERS)
   const [todoItems, setTodoItems] = useState<TodoItem[]>([])
   const [todoListTyping, setTodoListTyping] = useState('')
   const [selectedChat, setSelectedChat] = useState('residence-permit')
   const [chatFolders, setChatFolders] = useState(INITIAL_CHAT_FOLDERS)
-  const [showTaxFolder, setShowTaxFolder] = useState(false)
   const [showTaxDialog, setShowTaxDialog] = useState(false)
   const [taxDialogTyping, setTaxDialogTyping] = useState('')
   const [showPremiumPopup, setShowPremiumPopup] = useState(false)
@@ -182,7 +180,7 @@ export default function Chat() {
 
     // Wait for 5 seconds before showing the Tax folder
     await new Promise(resolve => setTimeout(resolve, 5000))
-    setShowTaxFolder(true)
+    // setShowTaxFolder(true) // Removed as not used in demo
     setChatFolders(prev => [...prev, { id: 'taxes', name: 'Taxes', icon: Folder, typingName: '' }])
     
     // Type out the name of the Tax folder
@@ -296,7 +294,7 @@ export default function Chat() {
           </div>
           <h2 className="text-lg font-semibold mt-6 mb-4 text-[#1e2837]">Reminders</h2>
           <div className="space-y-2">
-            {reminders.map(reminder => (
+            {INITIAL_REMINDERS.map(reminder => (
               <div key={reminder.id} className="flex items-center space-x-2 p-2 hover:bg-[#d1d1b3] rounded text-[#1e2837]">
                 <span className="w-5 h-5">🔔</span>
                 <span>{reminder.title}</span>
@@ -361,7 +359,7 @@ export default function Chat() {
             <div className="bg-[#e6e6c8] rounded-lg shadow p-4 mb-6">
               <h2 className="text-xl font-semibold mb-4 text-[#1e2837]">Recent Activity</h2>
               <div className="space-y-2">
-                {documents.map(doc => (
+                {INITIAL_DOCUMENTS.map(doc => (
                   <div key={doc.id} className="flex items-center justify-between p-2 hover:bg-[#d1d1b3] rounded text-[#1e2837]">
                     <div className="flex items-center space-x-2">
                       <span className="w-5 h-5">📄</span>
@@ -450,4 +448,28 @@ export default function Chat() {
     </Layout>
   )
 }
+
+// Commented out as not used in demo
+// const uploadFileToS3 = async (file: File): Promise<string | null> => {
+//   try {
+//     const response = await fetch("/api/upload", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ filename: file.name, fileType: file.type }),
+//     })
+//
+//     const { uploadURL } = await response.json()
+//
+//     await fetch(uploadURL, {
+//       method: "PUT",
+//       headers: { "Content-Type": file.type },
+//       body: file,
+//     })
+//
+//     return `uploads/${file.name}`
+//   } catch (error) {
+//     console.error("Error uploading file:", error)
+//     return null
+//   }
+// }
 

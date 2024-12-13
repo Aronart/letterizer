@@ -22,10 +22,10 @@ export default function Home() {
   const [chatMessages, setChatMessages] = useState<{ role: string; content: string }[]>([
     { role: 'assistant', content: 'Hi, let me help you with your government form. Please upload a picture of the letter.' }
   ])
-  const [sessionId] = useState(uuidv4())
+  //const [sessionId] = useState(uuidv4())
   const [uploading, setUploading] = useState(false)
   const [initialResponseReceived, setInitialResponseReceived] = useState(false)
-  const resultRef = useRef<HTMLDivElement>(null)
+  //const resultRef = useRef<HTMLDivElement>(null)
   const pricingRef = useRef<HTMLDivElement>(null)
   const [showSignUpPanel, setShowSignUpPanel] = useState(false)
   const [showFloatingButton, setShowFloatingButton] = useState(false)
@@ -46,7 +46,7 @@ export default function Home() {
     }
   }
 
-  const uploadFileToS3 = async (file: File): Promise<string | null> => {
+  /* const uploadFileToS3 = async (file: File): Promise<string | null> => {
     try {
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -67,7 +67,7 @@ export default function Home() {
       console.error("Error uploading file:", error)
       return null
     }
-  }
+  } */
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
