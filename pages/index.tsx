@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react'
-import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
 import { useRouter } from 'next/navigation'
+import ReactMarkdown from 'react-markdown'
 
 const languages = [
   { code: 'en', name: 'English', question: 'Which language would you like to work in?' },
@@ -27,10 +27,10 @@ export default function Home() {
   const [initialResponseReceived, setInitialResponseReceived] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
   const pricingRef = useRef<HTMLDivElement>(null)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [showSignUpPanel, setShowSignUpPanel] = useState(false)
   const [showFloatingButton, setShowFloatingButton] = useState(false)
   const router = useRouter()
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -44,10 +44,6 @@ export default function Home() {
     if (e.target.files) {
       setFiles(Array.from(e.target.files))
     }
-  }
-
-  const handleLanguageSelect = (langCode: string) => {
-    setLanguage(langCode)
   }
 
   const uploadFileToS3 = async (file: File): Promise<string | null> => {
@@ -83,68 +79,62 @@ export default function Home() {
     setUploading(true)
 
     try {
-      const s3Key = await uploadFileToS3(files[0])
+      // Simulate file upload
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-      if (s3Key) {
-        const ocrResponse = await fetch("/api/ocr", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ s3Key, sessionId }),
-        })
 
-        const { extractedText } = await ocrResponse.json()
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Processing your document..." },
+      ])
 
-        if (!extractedText) {
-          alert("Failed to extract text from the document.")
-          return
-        }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
-        setChatMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: "Processing your document..." },
-        ])
+      const dummyResponse = `
+# 1. What is this document about?
 
-        const openaiResponse = await fetch("/api/openai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: extractedText,
-            sessionId,
-            language,
-            action: "summarize",
-          }),
-        })
+---
 
-        const reader = openaiResponse.body?.getReader()
-        if (reader) {
-          const decoder = new TextDecoder("utf-8")
-          let content = ""
+This document is a request for additional documents needed for your residence permit application in München. They need certain papers from you to continue processing your request.
 
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
 
-            const chunk = decoder.decode(value, { stream: true })
-            content += chunk
+# 2. What do I need to do?
 
-            setChatMessages((prev) => [
-              ...prev.slice(0, -1),
-              { role: "assistant", content },
-            ])
-          }
-        }
+---
 
-        setInitialResponseReceived(true)
+There are some steps you need to take to complete your application:
 
-        // Add the sign-up message after the initial response
-        setChatMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: "Sign up so I can continue helping you with your government form." },
-        ])
-        setShowSignUpPanel(true)
-      } else {
-        alert("Failed to upload the file.")
-      }
+Send the following documents:
+- A copy of your current work contract.
+- Proof of existing health insurance.
+- A copy of your rental agreement.
+
+You can send these documents:
+- By mail to the address at the top of the letter.
+- Or bring them in person during office hours.
+
+If you have questions, you can:
+- Call: 089 233-45261
+- Email: buergerbuero222.kvr@muenchen.de
+
+
+# 3. Important Notes or Warnings
+
+---
+
+- Make sure to submit the documents by the deadline of December 31, 2024.
+- If you don't, your application may be delayed.
+
+---
+`;
+
+      setChatMessages((prev) => [
+        ...prev.slice(0, -1),
+        { role: "assistant", content: dummyResponse },
+      ])
+
+      setInitialResponseReceived(true)
     } catch (error) {
       console.error("Error during processing:", error)
       alert("An error occurred during processing.")
@@ -157,45 +147,16 @@ export default function Home() {
     setChatMessages((prev) => [...prev, { role: "user", content: message }])
 
     try {
-      const response = await fetch("/api/openai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "chat",
-          text: message,
-          sessionId,
-          language,
-        }),
-      })
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-      const reader = response.body?.getReader()
-      if (reader) {
-        const decoder = new TextDecoder("utf-8")
-        let content = ""
-
+      // Add the "Sign up" message after the first user message
+      if (!showSignUpPanel) {
         setChatMessages((prev) => [
           ...prev,
-          { role: "assistant", content: "" },
+          { role: "assistant", content: "Sign up so I can continue helping you with your government form." },
         ])
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          const chunk = decoder.decode(value, { stream: true })
-          content += chunk
-
-          setChatMessages((prev) => {
-            const updatedMessages = [...prev]
-            const lastMessageIndex = updatedMessages.findIndex(
-              (msg) => msg.role === "assistant" && msg.content === ""
-            )
-            if (lastMessageIndex !== -1) {
-              updatedMessages[lastMessageIndex].content = content
-            }
-            return updatedMessages
-          })
-        }
+        setShowSignUpPanel(true)
       }
     } catch (error) {
       console.error("Error during chat processing:", error)
@@ -210,15 +171,11 @@ export default function Home() {
   const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-    const fullName = formData.get('fullName') as string
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    // Here you would typically send this data to your backend
-    // For now, we'll just simulate a successful sign-up
-    console.log("Sign-up submitted", { fullName, email, password })
+    console.log("Sign-up submitted", { email, password })
 
-    // Redirect to the detailed information form
     router.push('/signup/details')
   }
 
@@ -229,17 +186,17 @@ export default function Home() {
 
   if (!language) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 max-w-md w-full">
-          <h2 className="text-2xl font-bold mb-4 text-center">
+      <div className="fixed inset-0 bg-[#f5f5dc] flex items-center justify-center z-50">
+        <div className="bg-[#e6e6c8] rounded-lg p-8 max-w-md w-full shadow-lg">
+          <h2 className="text-2xl font-bold mb-4 text-center text-[#1e2837]">
             {languages[currentQuestionIndex].question}
           </h2>
           <div className="grid grid-cols-2 gap-4">
             {languages.map((lang) => (
               <button
                 key={lang.code}
-                onClick={() => handleLanguageSelect(lang.code)}
-                className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                onClick={() => setLanguage(lang.code)}
+                className="w-full px-4 py-2 bg-[#1e2837] text-[#f5f5dc] rounded hover:bg-[#2a3749] transition-colors"
               >
                 {lang.name}
               </button>
@@ -251,133 +208,128 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen relative">
-      <header className="bg-gray-800 text-white p-4">
+    <div className="flex flex-col min-h-screen bg-[#f5f5dc]">
+      <header className="bg-[#f5f5dc] text-[#1e2837] p-4 border-b border-[#e6e6c8]">
         <nav className="container mx-auto flex justify-between items-center">
           <div className="text-2xl font-bold">Doculizer</div>
           <div>
-            <button onClick={() => setShowSignUpPanel(true)} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors mr-4">
-              Sign Up
+            <button onClick={scrollToPricing} className="bg-[#f5f5dc] text-[#1e2837] px-4 py-2 rounded hover:bg-[#e6e6c8] transition-colors mr-4 border border-[#1e2837]">
+              See Plans
             </button>
-            <button onClick={scrollToPricing} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
-              Pricing
+            <button onClick={() => setShowSignUpPanel(true)} className="bg-[#1e2837] text-[#f5f5dc] px-4 py-2 rounded hover:bg-[#2a3749] transition-colors">
+              Sign Up
             </button>
           </div>
         </nav>
       </header>
 
-      <main className="flex-grow container mx-auto p-4">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4">Welcome to Doculizer</h1>
-          <p className="text-xl">Upload your document and get valuable insights in {languages.find(lang => lang.code === language)?.name}.</p>
+      <main className="flex-grow container mx-auto p-4 max-w-4xl">
+        <div className="mb-8 mt-16">
+          <h1 className="text-5xl font-bold mb-4 text-[#1e2837]">Government Forms Annoy. We Help.</h1>
+          <p className="text-xl text-[#1e2837] max-w-2xl">
+            Outdated mailing communication wastes your time. Doculizer translates, simplifies, and digitizes letters and forms so you can move forward.
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          <div>
-            {/* File Upload Section */}
-            <section className="bg-gray-100 p-6 rounded-lg shadow-lg border border-gray-300 mb-8">
-              <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
-                <div className="flex flex-col space-y-2">
-                  <label htmlFor="file-upload" className="text-sm font-medium">
-                    Upload File
-                  </label>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="cursor-pointer bg-white text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors inline-block text-center font-medium text-lg border border-gray-400"
-                  >
-                    {files.length > 0 ? files[0].name : "Choose File"}
-                  </label>
-                </div>
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className={`bg-blue-500 text-white py-2 px-4 rounded-lg ${
-                    uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
-                  } transition-colors`}
-                >
-                  {uploading ? "Processing..." : "Submit"}
-                </button>
-              </form>
-            </section>
-
-            {/* Chat Section */}
-            <div className="bg-white p-4 rounded-lg shadow border border-gray-300">
-              <div className="h-64 overflow-y-auto mb-4">
-                {chatMessages.map((message, index) => (
-                  <div key={index} className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
-                    <div className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                      {message.content}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <form onSubmit={(e) => {
-                e.preventDefault()
-                const input = e.currentTarget.elements.namedItem('chat-input') as HTMLInputElement
-                if (input.value.trim() && initialResponseReceived) {
-                  handleChatSubmit(input.value.trim())
-                  input.value = ''
-                }
-              }} className="mt-4 flex">
+        <div className="bg-[#e6e6c8] p-6 rounded-lg shadow-lg mb-16">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="file-upload" className="block text-xl text-[#1e2837] mb-4">
+                Upload File
+              </label>
+              <div className="relative">
                 <input
                   type="text"
-                  name="chat-input"
-                  placeholder="Ask a question..."
-                  className="flex-grow p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={!initialResponseReceived}
+                  className="w-full p-4 bg-[#f5f5dc] border border-[#e6e6c8] rounded-lg text-[#1e2837] cursor-pointer text-center"
+                  value={files.length > 0 ? files[0].name : ""}
+                  placeholder="Select a file..."
+                  readOnly
+                  onClick={() => document.getElementById('file-upload')?.click()}
                 />
-                <button
-                  type="submit"
-                  className={`bg-blue-500 text-white px-4 py-2 rounded-r-lg ${initialResponseReceived ? 'hover:bg-blue-600' : 'opacity-50 cursor-not-allowed'} transition-colors`}
-                  disabled={!initialResponseReceived}
-                >
-                  Send
-                </button>
-              </form>
+                <input
+                  id="file-upload"
+                  name="file-upload"
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  accept="image/*"
+                />
+              </div>
             </div>
-          </div>
+            <div>
+              <button
+                type="button"
+                className="w-full p-4 text-[#1e2837] bg-[#f5f5dc] border border-[#e6e6c8] rounded-lg hover:bg-[#e6e6c8] transition-colors"
+                onClick={() => console.log('Take a Picture clicked')}
+              >
+                Take a Picture
+              </button>
+            </div>
+            <button
+              type="submit"
+              disabled={uploading}
+              className={`w-full p-4 text-[#f5f5dc] bg-[#1e2837] rounded-lg hover:bg-[#2a3749] transition-colors ${
+                uploading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              {uploading ? "Processing..." : "Submit"}
+            </button>
+          </form>
+        </div>
 
-          <div>
-            <Image
-              src="/placeholder-image.jpeg"
-              alt="Placeholder"
-              width={500}
-              height={300}
-              className="rounded-lg shadow-lg"
-            />
+        {/* Chat Section */}
+        <div className="bg-[#e6e6c8] p-6 rounded-lg shadow-lg mb-16">
+          <h2 className="text-xl text-[#1e2837] mb-4">Chat</h2>
+          <div className="h-96 overflow-y-auto mb-4 space-y-4">
+            {chatMessages.map((message, index) => (
+              <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`inline-block p-4 rounded-lg bg-[#f5f5dc] text-[#1e2837] max-w-[80%]`}>
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                </div>
+              </div>
+            ))}
           </div>
+          <form onSubmit={(e) => {
+            e.preventDefault()
+            const input = e.currentTarget.elements.namedItem('chat-input') as HTMLInputElement
+            if (input.value.trim() && initialResponseReceived) {
+              handleChatSubmit(input.value.trim())
+              input.value = ''
+            }
+          }}>
+            <input
+              type="text"
+              name="chat-input"
+              placeholder="Type your message..."
+              className="w-full p-4 bg-[#f5f5dc] border border-[#e6e6c8] rounded-lg text-[#1e2837] focus:outline-none focus:ring-2 focus:ring-[#1e2837]"
+              disabled={!initialResponseReceived}
+            />
+          </form>
         </div>
 
         {/* Pricing Section */}
         <div ref={pricingRef} className="py-16 scroll-mt-20">
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* Free Plan */}
-            <div className="w-full bg-white p-8 rounded-lg shadow-lg border border-gray-300">
+            <div className="w-full bg-[#e6e6c8] p-8 rounded-lg shadow-lg border border-[#1e2837]">
               <div className="mb-8">
-                <h3 className="text-2xl font-bold mb-2">Free</h3>
-                <p className="text-gray-700 mb-4">
+                <h3 className="text-2xl font-bold mb-2 text-[#1e2837]">Free</h3>
+                <p className="text-[#1e2837] mb-4">
                   Upload a Picture of your Document and get valuable Insights in the Language of your choice.
                 </p>
-                <div className="text-3xl font-bold">$0</div>
+                <div className="text-3xl font-bold text-[#1e2837]">$0</div>
               </div>
               
               <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
+                <li className="flex items-center text-[#1e2837]">
                   <span className="mr-2 text-green-600">✓</span>
                   Single document processing
                 </li>
-                <li className="flex items-center">
+                <li className="flex items-center text-[#1e2837]">
                   <span className="mr-2 text-green-600">✓</span>
                   Basic language translation
                 </li>
-                <li className="flex items-center">
+                <li className="flex items-center text-[#1e2837]">
                   <span className="mr-2 text-green-600">✓</span>
                   Simple document insights
                 </li>
@@ -385,17 +337,17 @@ export default function Home() {
 
               <button 
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                className="w-full px-6 py-3 bg-[#1e2837] text-[#f5f5dc] rounded-md hover:bg-[#2a3749] transition-colors"
               >
                 Try It
               </button>
             </div>
 
             {/* Pro Plan */}
-            <div className="w-full bg-gray-800 text-white p-8 rounded-lg shadow-lg relative overflow-hidden">
+            <div className="w-full bg-[#1e2837] text-[#f5f5dc] p-8 rounded-lg shadow-lg relative overflow-hidden">
               <div className="mb-8">
                 <h3 className="text-2xl font-bold mb-2">Pro</h3>
-                <p className="text-gray-300 mb-4">
+                <p className="mb-4">
                   Upload, Store & Chat with your Documents in any Language. Digitalization is here.
                 </p>
                 <div className="text-3xl font-bold">Contact Us</div>
@@ -403,7 +355,7 @@ export default function Home() {
               
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
-                <span className="mr-2 text-green-400">✓</span>
+                  <span className="mr-2 text-green-400">✓</span>
                   Unlimited document processing
                 </li>
                 <li className="flex items-center">
@@ -417,8 +369,9 @@ export default function Home() {
               </ul>
 
               <button 
-              onClick={() => window.open("https://airtable.com/app6lF04LIuLbm3Z8/pagg0r3rqobQKG2t6/form", "_blank")}
-              className="w-full px-6 py-3 bg-white text-gray-800 rounded-lg hover:bg-gray-200 transition-colors">
+                onClick={() => window.open("https://airtable.com/app6lF04LIuLbm3Z8/pagg0r3rqobQKG2t6/form", "_blank")}
+                className="w-full px-6 py-3 bg-[#f5f5dc] text-[#1e2837] rounded-md hover:bg-[#e6e6c8] transition-colors"
+              >
                 Sign Up
               </button>
             </div>
@@ -426,27 +379,38 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="bg-gray-800 text-white p-4 mt-8">
+      <footer className="bg-[#1e2837] text-[#f5f5dc] p-4 mt-8">
         <div className="container mx-auto text-center">
-          <p>&copy; 2023 Doculizer. All rights reserved.</p>
+          <p>&copy; 2024 Doculizer. All rights reserved.</p>
         </div>
       </footer>
 
       {/* Sign-up Panel */}
-      <div className={`fixed inset-y-0 right-0 w-96 bg-white shadow-lg transform ${showSignUpPanel ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300 ease-in-out overflow-y-auto`}>
+      <div className={`fixed inset-y-0 right-0 w-96 bg-[#e6e6c8] shadow-lg transform ${showSignUpPanel ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300 ease-in-out overflow-y-auto`}>
         <div className="p-6">
-          <button onClick={closeSignUpPanel} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+          <button onClick={closeSignUpPanel} className="absolute top-4 right-4 text-[#1e2837] hover:opacity-70">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <h2 className="text-2xl font-bold mb-4">Sign Up for Pro Access</h2>
-          <p className="mb-4">Get unlimited document processing, advanced language translation, and document storage & management.</p>
+          <h2 className="text-2xl font-bold mb-4 text-[#1e2837]">Sign Up for Pro Access</h2>
+          <p className="mb-4 text-[#1e2837]">Get unlimited document processing, advanced language translation, and document storage & management.</p>
           <form onSubmit={handleSignUp} className="space-y-4">
-            <input type="text" placeholder="Full Name" name="fullName" className="w-full p-2 border rounded" required />
-            <input type="email" placeholder="Email" name="email" className="w-full p-2 border rounded" required />
-            <input type="password" placeholder="Password" name="password" className="w-full p-2 border rounded" required />
-            <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors">
+            <input 
+              type="email" 
+              placeholder="Email" 
+              name="email" 
+              className="w-full p-4 bg-[#f5f5dc] border border-[#e6e6c8] rounded-lg text-[#1e2837] focus:outline-none focus:ring-2 focus:ring-[#1e2837]" 
+              required 
+            />
+            <input 
+              type="password" 
+              placeholder="Password" 
+              name="password" 
+              className="w-full p-4 bg-[#f5f5dc] border border-[#e6e6c8] rounded-lg text-[#1e2837] focus:outline-none focus:ring-2 focus:ring-[#1e2837]" 
+              required 
+            />
+            <button type="submit" className="w-full p-4 bg-[#1e2837] text-[#f5f5dc] rounded-lg hover:bg-[#2a3749] transition-colors">
               Sign Up
             </button>
           </form>
@@ -457,18 +421,11 @@ export default function Home() {
       {showFloatingButton && (
         <button
           onClick={() => setShowSignUpPanel(true)}
-          className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+          className="fixed bottom-4 right-4 bg-[#1e2837] text-[#f5f5dc] p-4 rounded-full shadow-lg hover:bg-[#2a3749] transition-colors"
         >
           Sign Up
         </button>
       )}
-
-      {process.env.NEXT_PUBLIC_DEMO_MODE === 'true' && (
-        <div className="bg-yellow-300 text-black p-2 text-center fixed bottom-0 left-0 right-0">
-          Demo Mode: Functionality is simulated
-        </div>
-      )}
     </div>
   )
 }
-

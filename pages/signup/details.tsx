@@ -2,121 +2,162 @@
 
 import { useState, FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Input, Select } from "@/components/ui"
 
 export default function SignUpDetails() {
   const router = useRouter()
   const [formData, setFormData] = useState({
-    immigrationDate: '',
-    birthday: '',
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    nationality: '',
     maritalStatus: '',
     occupation: '',
     germanLanguageLevel: '',
-    residencePermitType: '',
+    residencePermit: '',
     healthInsuranceStatus: '',
     taxIdNumber: '',
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }))
+    }
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    // Here you would typically send this data to your backend
-    console.log("Detailed information submitted", formData)
-
-    // Redirect to the paid user chat interface
-    router.push('/chat')
+    setIsSubmitting(true)
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulating API call
+      console.log("Detailed information submitted", formData)
+      router.push('/chat')
+    } catch (error) {
+      console.error("Error submitting form:", error)
+      setErrors({ submit: 'An error occurred while submitting the form. Please try again.' })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f5f5dc] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-[#1e2837]">
           Complete Your Profile
         </h2>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <Card className="mt-8 sm:mx-auto sm:w-full sm:max-w-md bg-[#e6e6c8] border-[#1e2837]">
+        <CardHeader>
+          <CardTitle className="text-[#1e2837]">Sign Up Details</CardTitle>
+          <CardDescription className="text-[#1e2837]">Please fill in your information to complete the sign-up process.</CardDescription>
+        </CardHeader>
+        <CardContent>
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="immigrationDate" className="block text-sm font-medium text-gray-700">
-                Date of Immigration to Germany
+              <label htmlFor="firstName" className="block text-sm font-medium text-[#1e2837]">
+                First Name
               </label>
-              <input
-                type="date"
-                name="immigrationDate"
-                id="immigrationDate"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                value={formData.immigrationDate}
+              <Input
+                type="text"
+                name="firstName"
+                id="firstName"
+                value={formData.firstName}
                 onChange={handleChange}
+                className="bg-[#f5f5dc] text-[#1e2837] border-[#1e2837]"
               />
             </div>
 
             <div>
-              <label htmlFor="birthday" className="block text-sm font-medium text-gray-700">
-                Birthday
+              <label htmlFor="lastName" className="block text-sm font-medium text-[#1e2837]">
+                Last Name
               </label>
-              <input
-                type="date"
-                name="birthday"
-                id="birthday"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                value={formData.birthday}
+              <Input
+                type="text"
+                name="lastName"
+                id="lastName"
+                value={formData.lastName}
                 onChange={handleChange}
+                className="bg-[#f5f5dc] text-[#1e2837] border-[#1e2837]"
               />
             </div>
 
             <div>
-              <label htmlFor="maritalStatus" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="dateOfBirth" className="block text-sm font-medium text-[#1e2837]">
+                Date of Birth
+              </label>
+              <Input
+                type="date"
+                name="dateOfBirth"
+                id="dateOfBirth"
+                value={formData.dateOfBirth}
+                onChange={handleChange}
+                className="bg-[#f5f5dc] text-[#1e2837] border-[#1e2837]"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="nationality" className="block text-sm font-medium text-[#1e2837]">
+                Nationality
+              </label>
+              <Input
+                type="text"
+                name="nationality"
+                id="nationality"
+                value={formData.nationality}
+                onChange={handleChange}
+                className="bg-[#f5f5dc] text-[#1e2837] border-[#1e2837]"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="maritalStatus" className="block text-sm font-medium text-[#1e2837]">
                 Marital Status
               </label>
-              <select
+              <Select
                 name="maritalStatus"
                 id="maritalStatus"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={formData.maritalStatus}
                 onChange={handleChange}
+                className="bg-[#f5f5dc] text-[#1e2837] border-[#1e2837]"
               >
                 <option value="">Select...</option>
                 <option value="single">Single</option>
                 <option value="married">Married</option>
                 <option value="divorced">Divorced</option>
                 <option value="widowed">Widowed</option>
-              </select>
+              </Select>
             </div>
 
             <div>
-              <label htmlFor="occupation" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="occupation" className="block text-sm font-medium text-[#1e2837]">
                 Occupation
               </label>
-              <input
+              <Input
                 type="text"
                 name="occupation"
                 id="occupation"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={formData.occupation}
                 onChange={handleChange}
+                className="bg-[#f5f5dc] text-[#1e2837] border-[#1e2837]"
               />
             </div>
 
             <div>
-              <label htmlFor="germanLanguageLevel" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="germanLanguageLevel" className="block text-sm font-medium text-[#1e2837]">
                 German Language Level
               </label>
-              <select
+              <Select
                 name="germanLanguageLevel"
                 id="germanLanguageLevel"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={formData.germanLanguageLevel}
                 onChange={handleChange}
+                className="bg-[#f5f5dc] text-[#1e2837] border-[#1e2837]"
               >
                 <option value="">Select...</option>
                 <option value="A1">A1 - Beginner</option>
@@ -125,68 +166,77 @@ export default function SignUpDetails() {
                 <option value="B2">B2 - Upper Intermediate</option>
                 <option value="C1">C1 - Advanced</option>
                 <option value="C2">C2 - Proficient</option>
-              </select>
+              </Select>
             </div>
 
             <div>
-              <label htmlFor="residencePermitType" className="block text-sm font-medium text-gray-700">
-                Residence Permit Type
+              <label htmlFor="residencePermit" className="block text-sm font-medium text-[#1e2837]">
+                Residence Permit
               </label>
-              <input
-                type="text"
-                name="residencePermitType"
-                id="residencePermitType"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                value={formData.residencePermitType}
+              <Select
+                name="residencePermit"
+                id="residencePermit"
+                value={formData.residencePermit}
                 onChange={handleChange}
-              />
+                className="bg-[#f5f5dc] text-[#1e2837] border-[#1e2837]"
+              >
+                <option value="">Select...</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </Select>
             </div>
 
             <div>
-              <label htmlFor="healthInsuranceStatus" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="healthInsuranceStatus" className="block text-sm font-medium text-[#1e2837]">
                 Health Insurance Status
               </label>
-              <select
+              <Select
                 name="healthInsuranceStatus"
                 id="healthInsuranceStatus"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={formData.healthInsuranceStatus}
                 onChange={handleChange}
+                className="bg-[#f5f5dc] text-[#1e2837] border-[#1e2837]"
               >
                 <option value="">Select...</option>
                 <option value="public">Public</option>
                 <option value="private">Private</option>
                 <option value="none">None</option>
-              </select>
+              </Select>
             </div>
 
             <div>
-              <label htmlFor="taxIdNumber" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="taxIdNumber" className="block text-sm font-medium text-[#1e2837]">
                 Tax Identification Number (if available)
               </label>
-              <input
+              <Input
                 type="text"
                 name="taxIdNumber"
                 id="taxIdNumber"
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 value={formData.taxIdNumber}
                 onChange={handleChange}
+                className="bg-[#f5f5dc] text-[#1e2837] border-[#1e2837]"
               />
             </div>
 
+            {errors.submit && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong className="font-bold">Error!</strong>
+                <span className="block sm:inline"> {errors.submit}</span>
+              </div>
+            )}
+
             <div>
-              <button
+              <Button
                 type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="w-full bg-[#1e2837] text-[#f5f5dc] hover:bg-[#2a3749]"
+                disabled={isSubmitting}
               >
-                Complete Sign Up
-              </button>
+                {isSubmitting ? 'Submitting...' : 'Complete Sign Up'}
+              </Button>
             </div>
           </form>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
